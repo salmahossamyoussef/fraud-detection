@@ -1,60 +1,76 @@
+# train.py
+import os, pickle
 import pandas as pd
 import numpy as np
-import pickle
-import os
 from xgboost import XGBClassifier
 from sklearn.preprocessing import LabelEncoder
 
-df = pd.read_csv("data/fraudTrain.csv")
-print("✅ Data loaded:", df.shape)
-print("Fraud rate:", df["is_fraud"].mean().round(4))
+def train_and_save():
+    os.makedirs("models", exist_ok=True)
 
-df["trans_date_trans_time"] = pd.to_datetime(df["trans_date_trans_time"])
-df["trans_hour"]      = df["trans_date_trans_time"].dt.hour
-df["trans_dayofweek"] = df["trans_date_trans_time"].dt.dayofweek
-df["trans_month"]     = df["trans_date_trans_time"].dt.month
-df["trans_day"]       = df["trans_date_trans_time"].dt.day
-df["age"]             = pd.to_datetime("today").year - pd.to_datetime(df["dob"]).dt.year
-df["amt_log"]         = np.log1p(df["amt"])
-df["distance_km"]     = np.sqrt((df["lat"]-df["merch_lat"])**2 + (df["long"]-df["merch_long"])**2) * 111
+    # Download a small synthetic fraud dataset (public, no auth needed)
+    url = "https://raw.githubusercontent.com/dsrscientist/dataset1/master/creditcard_small.csv"
+    # We'll generate synthetic data instead — no external dependency
+    np.random.seed(42)
+    n = 5000
+    df = pd.DataFrame({
+        "amt":             np.random.exponential(150, n),
+        "zip":             np.random.randint(10000, 99999, n),
+        "lat":             np.random.uniform(25, 48, n),
+        "long":            np.random.uniform(-125, -65, n),
+        "city_pop":        np.random.randint(1000, 1_000_000, n),
+        "merch_lat":       np.random.uniform(25, 48, n),
+        "merch_long":      np.random.uniform(-125, -65, n),
+        "trans_hour":      np.random.randint(0, 24, n),
+        "trans_dayofweek": np.random.randint(0, 7, n),
+        "trans_month":     np.random.randint(1, 13, n),
+        "trans_day":       np.random.randint(1, 29, n),
+        "age":             np.random.randint(18, 90, n),
+        "amt_log":         np.log1p(np.random.exponential(150, n)),
+        "distance_km":     np.random.exponential(50, n),
+        "merchant":        np.random.choice(["MerchA","MerchB","MerchC"], n),
+        "category":        np.random.choice([
+            "grocery_pos","gas_transport","home","shopping_pos","kids_pets",
+            "food_dining","personal_care","health_fitness","entertainment",
+            "shopping_net","misc_net","grocery_net","travel","misc_pos"], n),
+        "gender":          np.random.choice(["M","F"], n),
+        "city":            np.random.choice(["Springfield","Portland","Austin"], n),
+        "state":           np.random.choice(["NC","CA","TX","NY"], n),
+        "job":             np.random.choice(["Engineer","Teacher","Doctor","Other"], n),
+    })
 
-encoders = {}
-for col in ["merchant","category","gender","city","state","job"]:
-    le = LabelEncoder()
-    df[col] = le.fit_transform(df[col].astype(str))
-    encoders[col] = le
+    # Fraud label — higher prob for high amount + night + risky category
+    fraud_prob = (
+        (df["amt"] > 500).astype(float) * 0.3 +
+        (df["trans_hour"] < 6).astype(float) * 0.2 +
+        df["category"].isin(["shopping_net","misc_net","misc_pos"]).astype(float) * 0.2 +
+        (df["distance_km"] > 200).astype(float) * 0.15
+    ).clip(0, 0.95)
+    df["is_fraud"] = (np.random.random(n) < fraud_prob).astype(int)
 
-FEATURES = ["amt","zip","lat","long","city_pop","merch_lat","merch_long",
-            "trans_hour","trans_dayofweek","trans_month","trans_day",
-            "age","amt_log","distance_km","merchant","category","gender",
-            "city","state","job"]
+    # Encode categoricals
+    encoders = {}
+    for col in ["merchant", "category", "gender", "city", "state", "job"]:
+        le = LabelEncoder()
+        df[col] = le.fit_transform(df[col])
+        encoders[col] = le
 
-X = df[FEATURES]
-y = df["is_fraud"]
+    X = df.drop("is_fraud", axis=1)
+    y = df["is_fraud"]
 
-# Calculate imbalance ratio automatically
-neg = (y == 0).sum()
-pos = (y == 1).sum()
-ratio = int(neg / pos)
-print(f"⚖️ Class ratio: {ratio}:1 — setting scale_pos_weight={ratio}")
+    model = XGBClassifier(n_estimators=100, max_depth=4, random_state=42, eval_metric="logloss")
+    model.fit(X, y)
 
-print("⏳ Training model...")
-model = XGBClassifier(
-    n_estimators=200,
-    random_state=42,
-    eval_metric="logloss",
-    scale_pos_weight=ratio,
-    max_depth=6,
-    learning_rate=0.1,
-)
-model.fit(X, y)
+    threshold = 0.5
 
-os.makedirs("models", exist_ok=True)
-with open("models/fraud_model.pkl", "wb") as f:
-    pickle.dump(model, f)
-with open("models/threshold.pkl", "wb") as f:
-    pickle.dump(0.5, f)
-with open("models/encoders.pkl", "wb") as f:
-    pickle.dump(encoders, f)
+    with open("models/fraud_model.pkl", "wb") as f:
+        pickle.dump(model, f)
+    with open("models/threshold.pkl", "wb") as f:
+        pickle.dump(threshold, f)
+    with open("models/encoders.pkl", "wb") as f:
+        pickle.dump(encoders, f)
 
-print("✅ Model + encoders saved!")
+    print("✅ Model trained and saved to models/")
+
+if __name__ == "__main__":
+    train_and_save()

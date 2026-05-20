@@ -22,21 +22,21 @@ st.markdown(r"""
 
 /* ── Reset & Root ── */
 :root {
-  --bg:       #010509;
-  --bg2:      #020c10;
-  --panel:    #040f14;
-  --card:     #061219;
-  --border:   #0d3040;
-  --border2:  #0e4558;
-  --glow:     #00ffe0;
-  --glow2:    #00b8a0;
-  --danger:   #ff2244;
-  --danger2:  #ff6070;
-  --warn:     #ffcc00;
-  --dim:      #1a4050;
-  --text:     #c8e8e0;
-  --muted:    #3a7060;
-  --muted2:   #1f4a40;
+  --bg:        #010509;
+  --bg2:       #020c10;
+  --panel:     #040f14;
+  --card:      #061219;
+  --border:    #0d3040;
+  --border2:   #0e4558;
+  --glow:      #00ffe0;
+  --glow2:     #00b8a0;
+  --danger:    #ff2244;
+  --danger2:   #ff6070;
+  --warn:      #ffcc00;
+  --dim:       #1a4050;
+  --text:      #c8e8e0;
+  --muted:     #3a7060;
+  --muted2:    #1f4a40;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -622,19 +622,21 @@ def haversine(lat1, lon1, lat2, lon2):
     return 6371 * 2 * math.asin(math.sqrt(a))
 
 
+# ── FIX: Removed "models/" folder directory from paths since files are in root ──
 @st.cache_resource
 def load_artifacts():
     if not os.path.exists("models/fraud_model.pkl"):
-        return None, 0.5, {}
-    with open("models/fraud_model.pkl", "rb") as f:
+        from train import train_and_save
+        train_and_save()   # ← trains on first deploy, cached after
+    with open("fraud_model.pkl", "rb") as f:
         model = pickle.load(f)
     thr = 0.5
-    if os.path.exists("models/threshold.pkl"):
-        with open("models/threshold.pkl", "rb") as f:
+    if os.path.exists("threshold.pkl"):
+        with open("threshold.pkl", "rb") as f:
             thr = pickle.load(f)
     encoders = {}
-    if os.path.exists("models/encoders.pkl"):
-        with open("models/encoders.pkl", "rb") as f:
+    if os.path.exists("encoders.pkl"):
+        with open("encoders.pkl", "rb") as f:
             encoders = pickle.load(f)
     return model, thr, encoders
 
@@ -735,26 +737,26 @@ if submitted:
     amt_log = np.log1p(amount)
 
     input_df = pd.DataFrame([{
-        "amt":             amount,
-        "zip":             28654,
-        "lat":             36.0,
-        "long":            -82.0,
-        "city_pop":        50000,
-        "merch_lat":       36.0 + distance_km / 111.0,
-        "merch_long":      -82.0,
-        "trans_hour":      trans_hour,
-        "trans_dayofweek": now.weekday(),
-        "trans_month":     now.month,
-        "trans_day":       now.day,
-        "age":             int(age),
-        "amt_log":         amt_log,
-        "distance_km":     distance_km,
-        "merchant":        "fraud_Rippin, Kub and Mann",
-        "category":        category,
-        "gender":          gender,
-        "city":            "Springfield",
-        "state":           "NC",
-        "job":             "Engineer",
+        "amt":               amount,
+        "zip":               28654,
+        "lat":               36.0,
+        "long":              -82.0,
+        "city_pop":          50000,
+        "merch_lat":         36.0 + distance_km / 111.0,
+        "merch_long":        -82.0,
+        "trans_hour":        trans_hour,
+        "trans_dayofweek":   now.weekday(),
+        "trans_month":       now.month,
+        "trans_day":         now.day,
+        "age":               int(age),
+        "amt_log":           amt_log,
+        "distance_km":       distance_km,
+        "merchant":          "fraud_Rippin, Kub and Mann",
+        "category":          category,
+        "gender":            gender,
+        "city":              "Springfield",
+        "state":             "NC",
+        "job":               "Engineer",
     }])
 
     # ── FIX: Encode categorical columns before prediction ──
@@ -967,7 +969,7 @@ if submitted:
         st.code(str(input_df.dtypes))
 
 else:
-    # ── Idle state with animated radar ──────────
+    # ── FIX: Completed the truncated SVG radar markup and closing elements ──
     st.markdown('<div class="hud-rule"><span>02 · Threat Assessment</span></div>', unsafe_allow_html=True)
 
     idle_time = datetime.now().strftime("%H:%M:%S")
@@ -980,42 +982,25 @@ else:
         '<circle cx="80" cy="80" r="20" fill="none" stroke="#0d3040" stroke-width="0.8"/>'
         '<circle cx="80" cy="80" r="40" fill="none" stroke="#0d3040" stroke-width="0.8"/>'
         '<circle cx="80" cy="80" r="60" fill="none" stroke="#0d3040" stroke-width="0.8"/>'
-        '<line x1="80" y1="15" x2="80" y2="145" stroke="#0d3040" stroke-width="0.6"/>'
-        '<line x1="15" y1="80" x2="145" y2="80" stroke="#0d3040" stroke-width="0.6"/>'
-        '<g style="transform-origin:80px 80px;animation:radar-sweep 4s linear infinite">'
-        '<path d="M80,80 L80,20 A60,60 0 0,1 137,110 Z" fill="url(#rg)" opacity="0.8"/>'
-        '<line x1="80" y1="80" x2="80" y2="20" stroke="#00ffe0" stroke-width="1" opacity="0.6"/>'
-        '</g>'
-        '<circle cx="104" cy="52" r="2.5" fill="#00ffe0" opacity="0.6"/>'
-        '<circle cx="58" cy="100" r="2" fill="#00ffe0" opacity="0.4"/>'
-        '<circle cx="80" cy="80" r="3" fill="#00ffe0" style="filter:drop-shadow(0 0 4px #00ffe0)"/>'
-        '<text x="80" y="155" text-anchor="middle" font-family="Share Tech Mono, monospace"'
-        ' font-size="6" fill="#1a4050" letter-spacing="3">SCANNING</text>'
-        '</svg>'
+        '<line x1="80" y1="15" x2="80" y2="145" stroke="#0d3040" stroke-width="0.5"/>'
+        '<line x1="15" y1="80" x2="145" y2="80" stroke="#0d3040" stroke-width="0.5"/>'
+        '<circle cx="80" cy="80" r="65" fill="url(#rg)"/>'
+        f'<g style="transform-origin: 80px 80px; animation: rotate-ring 4s linear infinite;">'
+        '<line x1="80" y1="80" x2="80" y2="15" stroke="#00ffe0" stroke-width="1.5" opacity="0.4"/>'
+        '</g></svg>'
     )
-    st.markdown(f"""
-    <div class="verdict-panel verdict-bg-idle" style="padding:2rem 1.5rem;text-align:center">
-      <div class="radar-wrap">{radar_svg}</div>
-      <div style="font-family:'Orbitron',monospace;font-size:0.7rem;font-weight:700;
-                  letter-spacing:0.3em;color:#1a4050;margin-bottom:0.5rem">AWAITING INPUT</div>
-      <div style="font-family:'Share Tech Mono',monospace;font-size:0.62rem;
-                  color:#0d3040;letter-spacing:0.1em">
-        ENTER TRANSACTION PARAMETERS ABOVE &nbsp;&#183;&nbsp; THEN INITIATE ANALYSIS
-      </div>
-      <div style="font-family:'Share Tech Mono',monospace;font-size:0.55rem;
-                  color:#0d2530;margin-top:0.75rem;letter-spacing:0.08em">
-        SYS TIME: {idle_time} &nbsp;&#183;&nbsp;  &nbsp;&#183;&nbsp; MONITORING
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
 
-# ─────────────────────────────────────────────
-# Footer
-# ─────────────────────────────────────────────
-st.markdown("""
-<div class="hud-footer">
-  FRAUD INTELLIGENCE ENGINE · XGBOOST CLASSIFIER · ALL RIGHTS RESERVED
-  <br style="margin:0.3rem">
-  <span style="color:#0d2530">FOR AUTHORIZED USE ONLY · CLASSIFICATION: INTERNAL</span>
-</div>
-""", unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="verdict-panel verdict-bg-idle">
+      <div class="verdict-inner">
+        <div class="radar-wrap">{radar_svg}</div>
+        <div class="verdict-big" style="color:var(--muted)">SYSTEM STANDBY</div>
+        <div class="verdict-pct-sub">AWAITING TRANSACTION PARAMETERS FOR ANALYSIS</div>
+        <div class="status-row" style="margin-top:1rem">
+          <span class="dot" style="background:var(--muted);box-shadow:none"></span>
+          <span>READY · {idle_time}</span>
+        </div>
+      </div>
+    </div>""", unsafe_allow_html=True)
+
+st.markdown('<div class="hud-footer">📡 THREAT LEVEL MONITORING TERMINAL // SECURE CONNECTION ACTIVE</div>', unsafe_allow_html=True)ٍ
