@@ -30,21 +30,22 @@ The app features a dark, cyberpunk-inspired terminal UI with animated radar, CRT
 
 ---
 
-## 🗂️ Project Structure
+### 📊 Project Structure
 
-```
+* 📓 **[Jupyter Notebook](./Notebook/):** Contains data preprocessing, exploratory data analysis (EDA), and model training.
+* 🌐 **[Streamlit App](./app.py):** The production-ready code for the web application deployment.
+
+```text
 fraud-detection/
 ├── app.py              # Main Streamlit application
-├── train.py            # Model training script (auto-runs on first deploy)
+├── train.py            # Model training script
 ├── requirements.txt    # Python dependencies
-├── models/             # Auto-created on first run
-│   ├── fraud_model.pkl
-│   ├── threshold.pkl
-│   └── encoders.pkl
-└── README.md
-```
+├── README.md           # Project documentation
+├── fraud_model.pkl     # Trained fraud detection model
+├── threshold.pkl       # Decision threshold parameters
+└── encoders.pkl        # Data preprocessing encoders
 
----
+
 
 ## 🚀 Getting Started
 
