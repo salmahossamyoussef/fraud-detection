@@ -1003,4 +1003,4 @@ else:
       </div>
     </div>""", unsafe_allow_html=True)
 
-st.markdown('<div class="hud-footer">📡 THREAT LEVEL MONITORING TERMINAL // SECURE CONNECTION ACTIVE</div>', unsafe_allow_html=True)ٍ
+st.markdown('<div class="hud-footer">📡 THREAT LEVEL MONITORING TERMINAL // SECURE CONNECTION ACTIVE</div>', unsafe_allow_html=True)
