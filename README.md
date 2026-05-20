@@ -1,5 +1,8 @@
 # 🛡️ Fraud Detection — Real-Time Transaction Analysis
 
+**🌐 Live Demo:** [Click here to try the Streamlit App!](https://fraud-detection-8t2nltqd4seq8uwzvrdyag.streamlit.app/)
+
+
 > A military-HUD styled fraud detection web app powered by XGBoost, built with Streamlit.
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue?style=flat-square&logo=python)
